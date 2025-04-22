@@ -61,6 +61,16 @@ void KnxWebserver::loop()
             endOta();
         }
     }
+
+    // Update the uptime every second
+    unsigned long now = millis();
+    unsigned long elapsedMillis = now - lastMillis;
+    if (elapsedMillis > 1000)
+    {
+        uptimeSeconds += elapsedMillis / 1000;
+        lastMillis = now;
+    }
+
     server->handleClient();
 }
 
@@ -227,6 +237,15 @@ void KnxWebserver::handleRoot()
     msg += "Last restart reason: " + ESP.getResetInfo() + "</p>";
 #endif
     msg += "<p>" + buildDetails + "</p>\n";
+
+    unsigned long secs=uptimeSeconds, mins=secs/60;
+    unsigned int hours=mins/60, days=hours/24;
+    secs-=mins*60;
+    mins-=hours*60;
+    hours-=days*24;
+    sprintf(strBuffer,"<p>Uptime %d days %2.2d:%2.2d:%2.2d</p>\n", (byte)days, (byte)hours, (byte)mins, (byte)secs);
+    msg += String(strBuffer);
+    
     msg += "</body>\n";
     msg += "</html>\n";
     server->send(200, "text/html", msg);

@@ -59,6 +59,8 @@ private:
     bool otaIntialized = false;
     uint8_t updateProgress = 0;
     unsigned long otaStartTime = 0;
+    unsigned long uptimeSeconds = 0;
+    unsigned long lastMillis = 0;
 
     void handleRoot();
     void handleProgMode();
