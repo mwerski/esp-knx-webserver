@@ -3,15 +3,12 @@
 #include <Arduino.h>
 
 #if defined(ESP32)
-#pragma message "Building KnxWebserver for ESP32"
 #include <WebServer.h>
 #include <ArduinoOTA.h>
 #elif defined(ESP8266)
-#pragma message "Building KnxWebserver for ESP8266"
 #include <ESP8266WebServer.h>
 #include <ArduinoOTA.h>
 #elif defined(LIBRETINY)
-#pragma message "Building KnxWebserver for LIBRETINY"
 #include <WebServer.h>
 #else
 #error "Wrong hardware. Not ESP8266 or ESP32 or LIBRETINY"
