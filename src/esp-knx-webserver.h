@@ -34,7 +34,7 @@ public:
     void endOta();
     void setHostname(String newName);
     void setBuildDetails(String details);
-    void setKnxDetail(String physAddr, bool configOk);
+    void setKnxDetail(String physAddr, String appDetails, bool configOk);
     void loop();
 
     void registerSetKnxModeCallback(callbackSetKnxMode *fctn);
@@ -50,6 +50,7 @@ private:
 #endif
     String hostname = "ESP-KNX-Device";
     String knxPhysAddr = "0.0.0";
+    String knxAppDetails = "";
     String buildDetails = "";
     bool knxConfigOk = false;
     const char *username;

@@ -87,9 +87,10 @@ void KnxWebserver::setBuildDetails(String details)
     buildDetails = details;
 }
 
-void KnxWebserver::setKnxDetail(String physAddr, bool configOk)
+void KnxWebserver::setKnxDetail(String physAddr, String appDetails, bool configOk)
 {
     knxPhysAddr = physAddr;
+    knxAppDetails = appDetails;
     knxConfigOk = configOk;
 }
 
@@ -237,6 +238,7 @@ void KnxWebserver::handleRoot()
     msg += "Last restart reason: " + ESP.getResetInfo() + "</p>";
 #endif
     msg += "<p>" + buildDetails + "</p>\n";
+    msg += "<p>" + knxAppDetails + "</p>\n";
 
     unsigned long secs=uptimeSeconds, mins=secs/60;
     unsigned int hours=mins/60, days=hours/24;
