@@ -114,6 +114,11 @@ void KnxWebserver::registerTftDebugCallback(callbackStartTftDebug *fctn)
     startTftDebugFctn = fctn;
 }
 
+void KnxWebserver::registerRestartDeviceCallback(callbackRestartDevice *fctn)
+{
+    restartDeviceFctn = fctn;
+}
+
 void KnxWebserver::handleRoot()
 {
     String msg = "<!DOCTYPE html><html>\n";
@@ -302,7 +307,10 @@ void KnxWebserver::handleRestart()
     server->sendHeader("Location", String("/"), true);
     server->send(302, "text/plain", "");
     server->handleClient();
-    ESP.restart();
+    if (restartDeviceFctn != nullptr)
+    {
+        restartDeviceFctn();
+    }
 }
 
 void KnxWebserver::handleTftUpdate()

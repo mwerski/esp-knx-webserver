@@ -25,6 +25,7 @@ typedef void callbackSetKnxMode(knxModeOptions_t mode);
 typedef knxModeOptions_t callbackGetKnxMode();
 typedef void callbackStartTftUpdate();
 typedef void callbackStartTftDebug();
+typedef void callbackRestartDevice();
 
 class KnxWebserver
 {
@@ -41,6 +42,7 @@ public:
     void registerGetKnxModeCallback(callbackGetKnxMode *fctn);
     void registerTftUpdateCallback(callbackStartTftUpdate *fctn);
     void registerTftDebugCallback(callbackStartTftDebug *fctn);
+    void registerRestartDeviceCallback(callbackRestartDevice *fctn);
 
 private:
 #if defined(ESP32) || defined(LIBRETINY)
@@ -82,6 +84,7 @@ private:
     callbackGetKnxMode *getKnxModeFctn;
     callbackStartTftUpdate *startTftUpdateFctn;
     callbackStartTftDebug *startTftDebugFctn;
+    callbackRestartDevice *restartDeviceFctn;
 };
 
 const char* const UPDATE_HTML PROGMEM = R"literal(
