@@ -1,10 +1,69 @@
 #include "esp-knx-webserver.h"
 #if defined(ESP32) || defined(LIBRETINY)
     #include <Update.h>
+		#include <esp_partition.h>
+		#include <esp_system.h>
+		#include <esp_arduino_version.h>
 #elif defined(ESP8266)
     #include <Updater.h>
     #define UPDATE_SIZE_UNKNOWN 0xFFFFFFFF
     #define errorString() getErrorString().c_str()
+#endif
+
+#ifdef ESP32
+static const char* resetReasonToStr(esp_reset_reason_t r) {
+	switch (r) {
+		case ESP_RST_POWERON:   return "Power on reset";
+		case ESP_RST_EXT:       return "External reset";
+		case ESP_RST_SW:        return "Software reset";
+		case ESP_RST_PANIC:     return "Exception/panic reset";
+		case ESP_RST_INT_WDT:   return "Interrupt WDT reset";
+		case ESP_RST_TASK_WDT:  return "Task WDT reset";
+		case ESP_RST_WDT:       return "Other WDT reset";
+		case ESP_RST_DEEPSLEEP: return "Deep sleep reset";
+		case ESP_RST_BROWNOUT:  return "Brownout reset";
+		case ESP_RST_SDIO:      return "SDIO reset";
+		default:                return "Unknown";
+	}
+}
+
+static void appendPartitionsHtml(String& msg)
+{
+    msg += "<h3>Partitions</h3>";
+		msg += "<div style='display:flex; justify-content:center'>";
+    msg += "<table style='border-collapse:collapse'>";
+    msg += "<tr>";
+    msg += "<th align='left'>Name</th>";
+    msg += "<th align='right'>Size</th>";
+    msg += "</tr>";
+    // APP partitions
+    esp_partition_iterator_t it =
+        esp_partition_find(ESP_PARTITION_TYPE_APP, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+    while (it)
+    {
+        const esp_partition_t* p = esp_partition_get(it);
+        msg += "<tr>";
+        msg += "<td align='left'>" + String(p->label) + "</td>";
+        msg += "<td align='right'>" + String(p->size / 1024) + " KB</td>";
+        msg += "</tr>";
+        it = esp_partition_next(it);
+    }
+    esp_partition_iterator_release(it);
+    // DATA partitions (fs, nvs, etc.)
+    it = esp_partition_find(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, nullptr);
+    while (it)
+    {
+        const esp_partition_t* p = esp_partition_get(it);
+        msg += "<tr>";
+        msg += "<td align='left'>" + String(p->label) + "</td>";
+        msg += "<td align='right'>" + String(p->size / 1024) + " KB</td>";
+        msg += "</tr>";
+        it = esp_partition_next(it);
+    }
+    esp_partition_iterator_release(it);
+
+    msg += "</table></div>";
+}
 #endif
 
 void KnxWebserver::startWeb(const char *www_username, const char *www_password)
@@ -131,7 +190,7 @@ void KnxWebserver::handleRoot()
     msg += ".button-dark {background-color: #34495e;}\n";
     msg += ".button-dark:active {background-color: #2c3e50;}\n";
     msg += ".warning {color: #a93226;}\n";
-    msg += "p {font-size: 14px;color: #888;margin-bottom: 10px;}\n";
+    msg += "p, table {font-size: 14px;color: #888;margin-bottom: 10px;}\n";
     msg += "</style>\n";
     msg += "</head>\n";
     msg += "<body>\n";
@@ -194,25 +253,38 @@ void KnxWebserver::handleRoot()
     msg += "\n";
 
 #if defined(ESP32)
-    char strBuffer[50];
+		char strBuffer[128];
     msg += "<h3>ESP32 Chip Info</h3>";
-    sprintf(strBuffer, "<p>Flash size: %.1gMB<br>", spi_flash_get_chip_size() / 1024.0 / 1024.0);
+		snprintf(strBuffer, sizeof(strBuffer), "<p>Chip version: %s (rev.%d)<br>", ESP.getChipModel(), ESP.getChipRevision());
+		msg += strBuffer;
+		snprintf(strBuffer, sizeof(strBuffer), "Core/SDK Version: %d.%d.%d / %s<br>", ESP_ARDUINO_VERSION_MAJOR, ESP_ARDUINO_VERSION_MINOR, ESP_ARDUINO_VERSION_PATCH, ESP.getSdkVersion());
+		msg += strBuffer;
+		esp_reset_reason_t rr = esp_reset_reason();
+		snprintf(strBuffer, sizeof(strBuffer), "Restart reason: %s<br>", resetReasonToStr(rr));
+		msg += strBuffer;
+    snprintf(strBuffer, sizeof(strBuffer), "Flash size: %.1gMB<br>", spi_flash_get_chip_size() / 1024.0 / 1024.0);
     msg += String(strBuffer);
-    sprintf(strBuffer, "PSRAM size: %.1gMB<br>", ESP.getPsramSize() / 1024.0 / 1024.0);
+    snprintf(strBuffer, sizeof(strBuffer), "PSRAM size: %.1gMB<br>", ESP.getPsramSize() / 1024.0 / 1024.0);
     msg += String(strBuffer);
-    sprintf(strBuffer, "Free PSRAM: %.1gMB<br>", ESP.getFreePsram() / 1024.0 / 1024.0);
+    snprintf(strBuffer, sizeof(strBuffer), "Free PSRAM: %.1gMB<br>", ESP.getFreePsram() / 1024.0 / 1024.0);
     msg += String(strBuffer);
-    sprintf(strBuffer, "Heap size: %.3gKB<br>", ESP.getHeapSize() / 1024.0);
+    snprintf(strBuffer, sizeof(strBuffer), "Heap size: %.3gKB<br>", ESP.getHeapSize() / 1024.0);
     msg += String(strBuffer);
-    sprintf(strBuffer, "Free heap: %.3gKB<br>", ESP.getFreeHeap() / 1024.0);
+    snprintf(strBuffer, sizeof(strBuffer), "Free heap: %.3gKB<br>", ESP.getFreeHeap() / 1024.0);
     msg += String(strBuffer);
-    sprintf(strBuffer, "Chip temperature: %.1f&deg;C<br>", temperatureRead());
+    snprintf(strBuffer, sizeof(strBuffer), "Chip temperature: %.1f&deg;C<br>", temperatureRead());
     msg += String(strBuffer);
-    sprintf(strBuffer, "CPU frequency: %dMHz<br>", ESP.getCpuFreqMHz());
+    snprintf(strBuffer, sizeof(strBuffer), "CPU frequency: %dMHz<br>", ESP.getCpuFreqMHz());
     msg += String(strBuffer);
-    msg += "WIFI MAC: " + String(WiFi.macAddress()) + "<br>";
-    sprintf(strBuffer, "WIFI Signal: %d&percnt;</p>", getRSSIasQuality(WiFi.RSSI()));
-    msg += String(strBuffer);
+		int rssiDbm = WiFi.isConnected() ? WiFi.RSSI() : 0;
+		int rssiPct = WiFi.isConnected() ? getRSSIasQuality(rssiDbm) : 0;
+		String ssid = WiFi.isConnected() ? WiFi.SSID() : String("(not connected)");
+		snprintf(strBuffer, sizeof(strBuffer), "WIFI SSID: %s<br>", ssid.c_str());
+		msg += strBuffer;
+		snprintf(strBuffer, sizeof(strBuffer), "WIFI RSSI: %d%%, %d dBm<br>", rssiPct, rssiDbm);
+		msg += strBuffer;
+		msg += "WIFI MAC: " + String(WiFi.macAddress()) + "<br>";
+		appendPartitionsHtml(msg);
 #elif defined(ESP8266)
     char strBuffer[100];
     msg += "<h3>ESP8266 Chip Info</h3>";
