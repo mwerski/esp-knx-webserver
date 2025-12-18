@@ -283,6 +283,8 @@ void KnxWebserver::handleRoot()
 		msg += strBuffer;
 		snprintf(strBuffer, sizeof(strBuffer), "WIFI RSSI: %d%%, %d dBm<br>", rssiPct, rssiDbm);
 		msg += strBuffer;
+		snprintf(strBuffer, sizeof(strBuffer), "WIFI BSSID: %s<br>", WiFi.BSSIDstr().c_str());
+		msg += strBuffer;
 		msg += "WIFI MAC: " + String(WiFi.macAddress()) + "<br>";
 		appendPartitionsHtml(msg);
 #elif defined(ESP8266)
