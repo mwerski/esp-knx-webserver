@@ -26,6 +26,7 @@ typedef knxModeOptions_t callbackGetKnxMode();
 typedef void callbackStartTftUpdate();
 typedef void callbackStartTftDebug();
 typedef void callbackRestartDevice();
+typedef void callbackStartWifiPortal();
 
 class KnxWebserver
 {
@@ -43,6 +44,10 @@ public:
     void registerTftUpdateCallback(callbackStartTftUpdate *fctn);
     void registerTftDebugCallback(callbackStartTftDebug *fctn);
     void registerRestartDeviceCallback(callbackRestartDevice *fctn);
+    void registerWifiPortalCallback(callbackStartWifiPortal *fctn);
+    // free/reclaim port 80, e.g. while a WiFi config portal is running
+    void stopWeb();
+    void resumeWeb();
 
 private:
 #if defined(ESP32) || defined(LIBRETINY)
@@ -58,6 +63,7 @@ private:
     const char *username;
     const char *password;
     bool authRequired = false;
+    bool webActive = false;
     bool otaActive = false;
     bool otaIntialized = false;
     uint8_t updateProgress = 0;
@@ -74,6 +80,7 @@ private:
     void handleRestart();
     void handleTftUpdate();
     void handleTftDebug();
+    void handleWifiPortal();
     void handleWebUpdateProgress();
     void handleWebUpdateDone();
     void handleNotFound();
@@ -85,6 +92,7 @@ private:
     callbackStartTftUpdate *startTftUpdateFctn;
     callbackStartTftDebug *startTftDebugFctn;
     callbackRestartDevice *restartDeviceFctn;
+    callbackStartWifiPortal *startWifiPortalFctn = nullptr;
 };
 
 const char* const UPDATE_HTML PROGMEM = R"literal(

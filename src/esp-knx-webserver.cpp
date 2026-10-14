@@ -95,6 +95,8 @@ void KnxWebserver::startWeb(const char *www_username, const char *www_password)
                { if (authRequired && !server->authenticate(username, password)) { return server->requestAuthentication(); } handleTftUpdate(); });
     server->on("/tftdebug", [this]()
                { if (authRequired && !server->authenticate(username, password)) { return server->requestAuthentication(); } handleTftDebug(); });
+    server->on("/wifiportal", [this]()
+               { if (authRequired && !server->authenticate(username, password)) { return server->requestAuthentication(); } handleWifiPortal(); });
     server->on("/webupdate", [this]()
                { server->send(200, "text/html", UPDATE_HTML); });
     server->on("/upload", HTTP_POST, 
@@ -105,6 +107,21 @@ void KnxWebserver::startWeb(const char *www_username, const char *www_password)
     server->onNotFound([this]()
                        { handleNotFound(); });
     server->begin();
+    webActive = true;
+}
+
+void KnxWebserver::stopWeb()
+{
+    if (!webActive) return;
+    server->stop();
+    webActive = false;
+}
+
+void KnxWebserver::resumeWeb()
+{
+    if (webActive || server == nullptr) return;
+    server->begin();
+    webActive = true;
 }
 
 void KnxWebserver::loop()
@@ -130,7 +147,7 @@ void KnxWebserver::loop()
         lastMillis = now;
     }
 
-    server->handleClient();
+    if (webActive) server->handleClient();
 }
 
 void KnxWebserver::setHostname(String newName)
@@ -176,6 +193,11 @@ void KnxWebserver::registerTftDebugCallback(callbackStartTftDebug *fctn)
 void KnxWebserver::registerRestartDeviceCallback(callbackRestartDevice *fctn)
 {
     restartDeviceFctn = fctn;
+}
+
+void KnxWebserver::registerWifiPortalCallback(callbackStartWifiPortal *fctn)
+{
+    startWifiPortalFctn = fctn;
 }
 
 void KnxWebserver::handleRoot()
@@ -244,6 +266,11 @@ void KnxWebserver::handleRoot()
     if (startTftDebugFctn != nullptr)
     {
         msg += "<a class=\"button button-dark\" href=\"/tftdebug\">TFT Debug</a>";
+    }
+
+    if (startWifiPortalFctn != nullptr)
+    {
+        msg += "<a class=\"button button-dark\" href=\"/wifiportal\" onclick=\"return confirm('Start WiFi setup portal? This page will be replaced by the setup portal.');\">WiFi</a>";
     }
 
     if (authRequired)
@@ -404,6 +431,18 @@ void KnxWebserver::handleTftDebug()
     if (startTftDebugFctn != nullptr)
     {
         startTftDebugFctn();
+    }
+}
+
+void KnxWebserver::handleWifiPortal()
+{
+    // the portal itself is started by the application in its main loop (it needs port 80),
+    // the browser is redirected to "/", which will then be served by the portal
+    server->sendHeader("Refresh", "3; url=/");
+    server->send(200, "text/html", "<html><body style='font-family:Helvetica;text-align:center'><h3>Starting WiFi setup portal...</h3></body></html>");
+    if (startWifiPortalFctn != nullptr)
+    {
+        startWifiPortalFctn();
     }
 }
 
