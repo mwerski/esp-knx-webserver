@@ -110,6 +110,16 @@ void KnxWebserver::startWeb(const char *www_username, const char *www_password)
     webActive = true;
 }
 
+bool KnxWebserver::checkAuth()
+{
+    if (authRequired && !server->authenticate(username, password))
+    {
+        server->requestAuthentication();
+        return false;
+    }
+    return true;
+}
+
 void KnxWebserver::stopWeb()
 {
     if (!webActive) return;

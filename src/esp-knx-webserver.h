@@ -48,6 +48,13 @@ public:
     // free/reclaim port 80, e.g. while a WiFi config portal is running
     void stopWeb();
     void resumeWeb();
+    // add application pages: register with getServer()->on(), call checkAuth() first in the handler
+#if defined(ESP32) || defined(LIBRETINY)
+    WebServer *getServer() { return server; }
+#elif defined(ESP8266)
+    ESP8266WebServer *getServer() { return server; }
+#endif
+    bool checkAuth(); // false: authentication was requested, the handler must return
 
 private:
 #if defined(ESP32) || defined(LIBRETINY)
